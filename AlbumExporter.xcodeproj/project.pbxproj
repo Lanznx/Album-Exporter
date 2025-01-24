@@ -23,7 +23,22 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		874610722D4350680046844F /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		874610602D4350680046844F /* PhotosUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PhotosUI.framework; path = System/Library/Frameworks/PhotosUI.framework; sourceTree = SDKROOT; };
+		874610622D4350680046844F /* Photos.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Photos.framework; path = System/Library/Frameworks/Photos.framework; sourceTree = SDKROOT; };
 		87BFE71F2D293C89004FF9BC /* AlbumExporter.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AlbumExporter.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		87BFE72F2D293C8B004FF9BC /* AlbumExporterTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AlbumExporterTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		87BFE7392D293C8B004FF9BC /* AlbumExporterUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AlbumExporterUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -72,12 +87,22 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		8746105F2D4350680046844F /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				874610602D4350680046844F /* PhotosUI.framework */,
+				874610622D4350680046844F /* Photos.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		87BFE7162D293C89004FF9BC = {
 			isa = PBXGroup;
 			children = (
 				87BFE7212D293C89004FF9BC /* AlbumExporter */,
 				87BFE7322D293C8B004FF9BC /* AlbumExporterTests */,
 				87BFE73C2D293C8B004FF9BC /* AlbumExporterUITests */,
+				8746105F2D4350680046844F /* Frameworks */,
 				87BFE7202D293C89004FF9BC /* Products */,
 			);
 			sourceTree = "<group>";
@@ -102,6 +127,7 @@
 				87BFE71B2D293C89004FF9BC /* Sources */,
 				87BFE71C2D293C89004FF9BC /* Frameworks */,
 				87BFE71D2D293C89004FF9BC /* Resources */,
+				874610722D4350680046844F /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
@@ -399,6 +425,8 @@
 				DEVELOPMENT_TEAM = X46TTSF55V;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "哈哈";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "嗨，我需要你的相簿";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -428,6 +456,8 @@
 				DEVELOPMENT_TEAM = X46TTSF55V;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "哈哈";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "嗨，我需要你的相簿";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
