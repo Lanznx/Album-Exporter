@@ -1,3 +1,4 @@
+// FileExporter.swift
 import Foundation
 import Photos
 
@@ -6,48 +7,67 @@ class FileExporter {
     func detectExternalDrives() -> [URL] {
         let fileManager = FileManager.default
         let paths = fileManager.mountedVolumeURLs(includingResourceValuesForKeys: nil, options: [])
-
-        guard let drives = paths else { return [] }
-        return drives.filter { $0.path.contains("/Volumes/") } // 外接硬碟一般掛載於 /Volumes
+        return paths?.filter { $0.path.hasPrefix("/Volumes/") } ?? []
     }
 
     // 匯出指定相簿到目標路徑
-    func exportAlbum(to destinationURL: URL, album: PHAssetCollection, completion: @escaping (Bool, Error?) -> Void) {
-        let assets = PHAsset.fetchAssets(in: album, options: nil)
+    func exportAlbum(to destinationURL: URL, album: PHAssetCollection, completion: @escaping (Bool, [Error]) -> Void) {
+        let assets: PHFetchResult<PHAsset> = PHAsset.fetchAssets(in: album, options: nil)
         let imageManager = PHImageManager.default()
 
-        var exportSuccess = true
-        let exportGroup = DispatchGroup()
+        let dispatchGroup = DispatchGroup()
+        var exportErrors: [Error] = []
 
-        assets.enumerateObjects { (asset, _, _) in
-            exportGroup.enter()
+        assets.enumerateObjects { (asset: PHAsset, index: Int, stop: UnsafeMutablePointer<ObjCBool>) in
+            dispatchGroup.enter()
+
             let options = PHImageRequestOptions()
             options.isSynchronous = false
+            options.deliveryMode = .highQualityFormat
 
-            let resource = PHAssetResource.assetResources(for: asset).first
-            let originalFilename = resource?.originalFilename ?? "\(UUID().uuidString).jpg"
+            imageManager.requestImageDataAndOrientation(for: asset, options: options) {
+                (data, dataUTI, orientation, info) in
+                
+                defer { dispatchGroup.leave() }
 
-            imageManager.requestImageDataAndOrientation(for: asset, options: options) { (data, _, _, _) in
-                defer { exportGroup.leave() }
-                guard let data = data else {
-                    print("無法獲取圖像數據：\(asset)")
-                    exportSuccess = false
+                // 從 info 字典中取出錯誤
+                let error = info?[PHImageErrorKey] as? Error
+                guard error == nil, let data = data else {
+                    exportErrors.append(error ?? NSError(domain: "ExportError", code: -1, userInfo: nil))
                     return
                 }
 
-                let fileURL = destinationURL.appendingPathComponent(originalFilename)
+                let fileName = self.generateUniqueFileName(for: asset, in: destinationURL)
+                let fileURL = destinationURL.appendingPathComponent(fileName)
+
                 do {
                     try data.write(to: fileURL)
                 } catch {
-                    print("寫入文件失敗：\(error.localizedDescription)")
-                    exportSuccess = false
+                    exportErrors.append(error)
                 }
             }
+
         }
 
-        exportGroup.notify(queue: .main) {
-            completion(exportSuccess, nil)
+        dispatchGroup.notify(queue: .main) {
+            completion(exportErrors.isEmpty, exportErrors)
         }
     }
 
+    // 為檔案生成唯一名稱
+    private func generateUniqueFileName(for asset: PHAsset, in directory: URL) -> String {
+        let originalName = PHAssetResource.assetResources(for: asset).first?.originalFilename ?? "Unnamed.jpg"
+        let fileManager = FileManager.default
+        var uniqueName = originalName
+        var counter = 1
+
+        while fileManager.fileExists(atPath: directory.appendingPathComponent(uniqueName).path) {
+            let fileExtension = (originalName as NSString).pathExtension
+            let baseName = (originalName as NSString).deletingPathExtension
+            uniqueName = "\(baseName)_\(counter).\(fileExtension)"
+            counter += 1
+        }
+
+        return uniqueName
+    }
 }

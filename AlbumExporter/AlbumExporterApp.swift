@@ -1,8 +1,11 @@
+// AlbumExporterApp.swift
+
 import SwiftUI
 import Photos
 
 class AppState: ObservableObject {
     @Published var isAuthorized: Bool = false
+    @Published var showPermissionAlert: Bool = false
 }
 
 @main
@@ -12,36 +15,41 @@ struct AlbumExporterApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .onAppear {
-                    requestPhotoLibraryAuthorization()
-                }
+                .environmentObject(appState)
+                .onAppear(perform: checkPhotoLibraryAuthorization)
         }
     }
     
-    private func requestPhotoLibraryAuthorization() {
+    private func checkPhotoLibraryAuthorization() {
         let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
-
+        
         switch status {
         case .notDetermined:
             PHPhotoLibrary.requestAuthorization(for: .readWrite) { newStatus in
                 DispatchQueue.main.async {
-                    if newStatus == .authorized || newStatus == .limited {
-                        appState.isAuthorized = true
-                        print("已授權訪問相簿")
-                    } else {
-                        appState.isAuthorized = false
-                        print("訪問相簿權限被拒絕")
-                    }
+                    self.handleAuthorizationStatus(newStatus)
                 }
             }
         case .restricted, .denied:
-            appState.isAuthorized = false
-            print("訪問相簿權限受限或被拒絕")
+            DispatchQueue.main.async {
+                self.appState.isAuthorized = false
+                self.appState.showPermissionAlert = true
+            }
         case .authorized, .limited:
-            appState.isAuthorized = true
-            print("相簿權限已授權")
+            DispatchQueue.main.async {
+                self.appState.isAuthorized = true
+            }
         @unknown default:
-            print("未知的相簿權限狀態")
+            print("Unknown authorization status")
+        }
+    }
+
+    private func handleAuthorizationStatus(_ status: PHAuthorizationStatus) {
+        if status == .authorized || status == .limited {
+            appState.isAuthorized = true
+        } else {
+            appState.isAuthorized = false
+            appState.showPermissionAlert = true
         }
     }
 }

@@ -1,27 +1,42 @@
+// FetchAlbums.swift
+
 import Photos
 
 class FetchAlbums {
     // 獲取相簿清單與其內容
-    func fetchAlbums() -> [(name: String, count: Int)] {
+    func fetchAlbums(completion: @escaping ([(name: String, count: Int)]) -> Void) {
         var albumData: [(name: String, count: Int)] = []
 
-        // 設置相簿獲取選項
-        let fetchOptions = PHFetchOptions()
-        fetchOptions.sortDescriptors = [NSSortDescriptor(key: "localizedTitle", ascending: true)]
-        
-        // 獲取使用者的相簿清單
-        let userAlbums = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: nil)
-        
-        userAlbums.enumerateObjects { (collection, _, _) in
-            // 計算相簿內的資產數量
-            let assets = PHAsset.fetchAssets(in: collection, options: nil)
-            let albumName = collection.localizedTitle ?? "Unnamed Album"
-            let assetCount = assets.count
-            
-            // 新增相簿資訊到清單
-            albumData.append((name: albumName, count: assetCount))
+        // 明確宣告型別
+        let userAlbumFetch: PHFetchResult<PHAssetCollection> =
+            PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: nil)
+        let smartAlbumFetch: PHFetchResult<PHAssetCollection> =
+            PHAssetCollection.fetchAssetCollections(with: .smartAlbum, subtype: .any, options: nil)
+
+        // 建立 DispatchGroup 確保完成所有相簿數據的處理
+        let dispatchGroup = DispatchGroup()
+
+        // 使用明確的型別陣列
+        let albumCollections: [PHFetchResult<PHAssetCollection>] = [userAlbumFetch, smartAlbumFetch]
+
+        albumCollections.forEach { fetchResult in
+            fetchResult.enumerateObjects { (album, _, _) in
+                dispatchGroup.enter()
+
+                let assets = PHAsset.fetchAssets(in: album, options: nil)
+                let albumName = album.localizedTitle ?? "Unnamed Album"
+                let assetCount = assets.count
+
+                // 新增相簿數據
+                albumData.append((name: albumName, count: assetCount))
+
+                dispatchGroup.leave()
+            }
         }
-        
-        return albumData
+
+        dispatchGroup.notify(queue: .main) {
+            // 確保所有數據處理完成後回傳結果
+            completion(albumData)
+        }
     }
 }

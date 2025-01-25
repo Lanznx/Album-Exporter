@@ -1,10 +1,12 @@
 // ContentView.swift
+
 import SwiftUI
 import Photos
-import UIKit
 
 struct ContentView: View {
-    @State private var showPermissionAlert = false
+    @EnvironmentObject var appState: AppState
+    @State private var showSettingsAlert = false
+    @State private var isLoadingAlbums = false // 用於顯示加載進度
 
     var body: some View {
         NavigationView {
@@ -15,48 +17,75 @@ struct ContentView: View {
                     .frame(height: 150)
                     .foregroundColor(.primary)
 
-                Text("歡迎使用相簿匯出工具")
+                Text("Welcome to Album Exporter")
                     .font(.title)
                     .fontWeight(.bold)
                     .padding(.top, 16)
 
-                Button(action: checkPermission) {
-                    Text("檢查相簿權限")
-                        .foregroundColor(.white)
-                        .padding()
-                        .background(Color.blue)
-                        .cornerRadius(8)
-                }
-                .padding(.bottom, 20)
-
-                // 新增 NavigationLink 跳轉到相簿列表頁面
-                NavigationLink(destination: FolderListView()) {
-                    Text("開始查看相簿")
-                        .foregroundColor(.white)
-                        .padding()
-                        .background(Color.green)
-                        .cornerRadius(8)
+                if appState.isAuthorized {
+                    if isLoadingAlbums {
+                        ProgressView("Loading Albums...")
+                            .progressViewStyle(CircularProgressViewStyle())
+                            .padding()
+                    } else {
+                        NavigationLink(destination: FolderListView()) {
+                            Text("Start Browsing Albums")
+                                .foregroundColor(.white)
+                                .padding()
+                                .background(Color.green)
+                                .cornerRadius(8)
+                        }
+                    }
+                } else {
+                    Button(action: openSettings) {
+                        Text("Grant Permission")
+                            .foregroundColor(.white)
+                            .padding()
+                            .background(Color.blue)
+                            .cornerRadius(8)
+                    }
                 }
             }
             .padding()
-            .alert(isPresented: $showPermissionAlert) {
+            .navigationTitle("Home")
+            .alert(isPresented: $showSettingsAlert) {
                 Alert(
-                    title: Text("相簿權限被拒絕"),
-                    message: Text("請前往系統設定開啟相簿權限"),
-                    primaryButton: .default(Text("設定"), action: openSettings),
+                    title: Text("Permission Denied"),
+                    message: Text("Please enable photo library access in Settings."),
+                    primaryButton: .default(Text("Settings"), action: openSettings),
                     secondaryButton: .cancel()
                 )
             }
-            .navigationTitle("主頁面")
+            .onAppear(perform: handleOnAppear)
         }
     }
 
-    private func checkPermission() {
+    private func handleOnAppear() {
+        // 確保首次啟動時檢查權限
         let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
-        if status == .restricted || status == .denied {
-            showPermissionAlert = true
-        } else {
-            print("相簿權限正常")
+        switch status {
+        case .authorized, .limited:
+            appState.isAuthorized = true
+        case .notDetermined:
+            requestPhotoLibraryPermission()
+        default:
+            appState.isAuthorized = false
+            appState.showPermissionAlert = true
+        }
+    }
+
+    private func requestPhotoLibraryPermission() {
+        isLoadingAlbums = true
+        PHPhotoLibrary.requestAuthorization(for: .readWrite) { newStatus in
+            DispatchQueue.main.async {
+                isLoadingAlbums = false
+                if newStatus == .authorized || newStatus == .limited {
+                    appState.isAuthorized = true
+                } else {
+                    appState.isAuthorized = false
+                    appState.showPermissionAlert = true
+                }
+            }
         }
     }
 
